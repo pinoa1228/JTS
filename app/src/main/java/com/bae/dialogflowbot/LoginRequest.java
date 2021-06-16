@@ -1,4 +1,4 @@
-package com.bae.dialogflowbot;
+/*package com.bae.dialogflowbot;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Response;
@@ -27,4 +27,4 @@ public class LoginRequest extends StringRequest {
     protected Map<String, String> getParams() throws AuthFailureError {
         return map;
     }
-}
+}*/

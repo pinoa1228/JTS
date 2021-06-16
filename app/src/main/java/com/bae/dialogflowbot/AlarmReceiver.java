@@ -32,6 +32,9 @@ public class AlarmReceiver extends BroadcastReceiver {
     private static String CHANNEL_NAME = "Channel1";
 
 
+    public String sendDate(String str){
+        return str;
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -48,9 +51,13 @@ public class AlarmReceiver extends BroadcastReceiver {
             builder = new NotificationCompat.Builder(context);
         }
 
+
         //알림창 클릭 시 activity 화면 부름
         Intent intent2 = new Intent(context, LoginActivity.class);
+        intent2.putExtra("after",1);
         PendingIntent pendingIntent = PendingIntent.getActivity(context,101,intent2, PendingIntent.FLAG_UPDATE_CURRENT);
+
+
 
         //알림창 제목
         builder.setContentTitle("일주일이 지났어요! 상담을 다시 진행할 시간이에요 :)");
@@ -65,64 +72,6 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         Notification notification = builder.build();
         manager.notify(1,notification);
-
-
-
-
-
-//        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context.getApplicationContext())
-//                .setSmallIcon(R.drawable.ic_launcher_background)
-//                .setPriority(Notification.PRIORITY_DEFAULT)
-//                .setCategory(Notification.CATEGORY_MESSAGE)
-//                .setContentTitle("알람")
-//                .setContentText("message")
-//                .setWhen(0)
-//                .setTicker(context.getString(R.string.app_name));
-//
-//        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-//        notificationBuilder.setContentText("message");
-////        if(isHeaderNotification) {
-////            notificationBuilder.setFullScreenIntent(fullScreenPendingIntent, false);
-////        }
-//
-//        notificationBuilder.setContentIntent(fullScreenPendingIntent);
-//        notificationBuilder.setAutoCancel(true);
-
-//        NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
-//                .setSmallIcon(R.drawable.ic_launcher_background) //알람 아이콘
-//                .setContentTitle("Title")  //알람 제목
-//                .setContentText("Text") //알람 내용
-//                .setPriority(NotificationCompat.PRIORITY_DEFAULT); //알람 중요도
-//
-//        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-//        notificationManager.notify(1, builder.build()); //알람 생성
-
-
-
-
-
-//
-//        Notification notification = notificationBuilder.build();
-//        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-//        manager.notify(001, notification);
-
-//        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-//        Intent intent = new Intent(context);
-//        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-//        Notification.Builder builder = new Notification.Builder(this);
-//        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), android.R.drawable.star_on));
-//        builder.setSmallIcon(android.R.drawable.star_on);
-//        builder.setTicker("알람 간단한 설명");
-//        builder.setContentTitle("알람 제목");
-//        builder.setContentText("알람 내용");
-//        builder.setWhen(System.currentTimeMillis());
-//        builder.setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE);
-//        builder.setContentIntent(pendingIntent);
-//        builder.setAutoCancel(true);
-//        builder.setNumber(999);
-//        builder.addAction(android.R.drawable.star_on, "반짝", pendingIntent);
-//        builder.addAction(android.R.drawable.star_off, "번쩍", pendingIntent);
-//        notificationManager.notify(0, builder.build());
 
     }
 }

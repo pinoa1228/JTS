@@ -1,4 +1,4 @@
-package com.bae.dialogflowbot;
+/*package com.bae.dialogflowbot;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -30,4 +30,4 @@ public class RegisterRequest extends StringRequest {
     protected Map<String, String> getParams() throws AuthFailureError {
         return map;
     }
-}
+}*/

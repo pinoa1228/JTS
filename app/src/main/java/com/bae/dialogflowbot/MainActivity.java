@@ -16,6 +16,7 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,7 +25,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bae.dialogflowbot.adapters.ChatAdapter;
 import com.bae.dialogflowbot.helpers.SendMessageInBg;
 import com.bae.dialogflowbot.interfaces.BotReply;
+import com.bae.dialogflowbot.interfaces.RetrofitInterface;
+import com.bae.dialogflowbot.models.Consultant;
+import com.bae.dialogflowbot.models.DataManager;
 import com.bae.dialogflowbot.models.Message;
+import com.bae.dialogflowbot.models.User;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.api.gax.core.FixedCredentialsProvider;
@@ -37,7 +42,11 @@ import com.google.cloud.dialogflow.v2.SessionsClient;
 import com.google.cloud.dialogflow.v2.SessionsSettings;
 import com.google.cloud.dialogflow.v2.TextInput;
 import com.google.common.collect.Lists;
+import com.google.protobuf.ListValue;
+import com.google.protobuf.Value;
+
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,9 +56,16 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import android.speech.tts.TextToSpeech;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements BotReply {
 
@@ -74,8 +90,17 @@ public class MainActivity extends AppCompatActivity implements BotReply {
   private NotificationManager notificationManager;
   NotificationCompat.Builder builder;
 
-  int no;
+  String from;
 
+  int no;
+  int after;
+  int alarm = 0;
+
+  long number;
+  List<String> content= new ArrayList<>();
+  User user;
+  String neg_val;
+  String appointment;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements BotReply {
 
     Intent intent = getIntent();
     no = intent.getIntExtra("daily", 0);
+    after = ((LoginActivity)LoginActivity.context_login).after;
+    System.out.println("after: " + after);
 
     FloatingActionButton fab = findViewById(R.id.fab);
     fab.setOnClickListener(new View.OnClickListener() {
@@ -128,6 +155,10 @@ public class MainActivity extends AppCompatActivity implements BotReply {
       String str = "daily";
       sendMessageToBot(str);
     }
+    if (after == 1){
+      String str = "after";
+      sendMessageToBot(str);
+    }
 
     notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
@@ -149,15 +180,15 @@ public class MainActivity extends AppCompatActivity implements BotReply {
     cal.setTime(new Date());
 
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd", Locale.KOREA);
-    //SimpleDateFormat dt = new SimpleDateFormat("HH:mm:ss", Locale.KOREA);
+    SimpleDateFormat dt = new SimpleDateFormat("HH:mm:ss", Locale.KOREA);
 
     System.out.println("current: " + df.format(cal.getTime()));
 
-    //cal.add(Calendar.DATE, 7);
+    cal.add(Calendar.DATE, 7);
     System.out.println("after: " + df.format(cal.getTime()));
 
     String getDate = df.format(cal.getTime());
-    String from = getDate + " 20:25:00";
+    from = getDate + " 10:00:00";
     System.out.println("from: " + from);
 
 
@@ -197,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements BotReply {
 
   private void sendMessageToBot(String message) {
     QueryInput input = QueryInput.newBuilder()
-        .setText(TextInput.newBuilder().setText(message).setLanguageCode("en-US")).build();
+        .setText(TextInput.newBuilder().setText(message).setLanguageCode("ko-kr")).build();
     new SendMessageInBg(this, sessionName, sessionsClient, input).execute();
   }
 
@@ -253,13 +284,20 @@ public class MainActivity extends AppCompatActivity implements BotReply {
   @Override
   public void callback(DetectIntentResponse returnResponse) {
      if(returnResponse!=null) {
+       System.out.println(returnResponse.getQueryResult().getAllFields());
+       Map<String, Value> neg = returnResponse.getQueryResult().getParameters().getFields();
+
+       if (returnResponse.getQueryResult().getParameters().getFieldsMap().keySet().contains("negative")) {
+         System.out.println("parameters fields: " + neg.get("negative"));
+         System.out.println(neg.get("negative").getListValue().getValuesList());
+       }
        botReply = returnResponse.getQueryResult().getFulfillmentText();
        if(!botReply.isEmpty()) {
          ArrayList<String> colors = new ArrayList<>(Arrays.asList("positive", "negative", "no emotion"));
          ArrayList<String> emos = new ArrayList<>(Arrays.asList("positive", "negative", "no emotion"));
 
          if (no == 1) {
-           if (botReply.equals("start daily") || botReply.equals("노래 추천")) {
+           if (botReply.equals("start daily") || botReply.equals("노래 추천") || botReply.equals("after")) {
              botReply = "";
            } else if (!emos.contains(botReply) && botReply.contains("http")) {
              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(botReply));
@@ -269,7 +307,8 @@ public class MainActivity extends AppCompatActivity implements BotReply {
              String pic = "이건 어떠세요?";
              messageList.add(new Message(botReply, true));
              speak(pic);
-           } else {
+           }
+           else {
              if (botReply.equals("positive")) {
                SoundPlayer.play(SoundPlayer.POSITIVE);
                botReply = "다행이네요, 좋아보이셔서 저도 행복해지네요!";
@@ -285,6 +324,7 @@ public class MainActivity extends AppCompatActivity implements BotReply {
              messageList.add(new Message(botReply, true));
 
            }
+           content.add(botReply);
            chatAdapter.notifyDataSetChanged();
            Objects.requireNonNull(chatView.getLayoutManager()).scrollToPosition(messageList.size() - 1);
          } else {
@@ -296,7 +336,32 @@ public class MainActivity extends AppCompatActivity implements BotReply {
 
              showDialog01();
            }
+           else if (botReply.equals("therapy")){
+             alarm = 1;
+             String str = "restart";
+             Intent intent = new Intent(this, FrontPageActivity.class);
+             sendMessageToBot(str);
+             ((LoginActivity)LoginActivity.context_login).after = 0;
+             startActivity(intent);
+           }
+           else if(botReply.equals("again")){
+             setAlarm();
+             content.add(botReply);
+             messageList.add(new Message(from, true));
+             chatAdapter.notifyDataSetChanged();
+             Objects.requireNonNull(chatView.getLayoutManager()).scrollToPosition(messageList.size() - 1);
+           }
+           else if(botReply.equals("finish")){
+             alarm = 1;
+             Intent intent = new Intent(this, FinishActivity.class);
+             Date mdate = Calendar.getInstance().getTime();
+             SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd", Locale.KOREA);
+             String date = df.format(mdate);
+             intent.putExtra("date", date);
+             startActivity(intent);
+           }
            else {
+             content.add(botReply);
              messageList.add(new Message(botReply, true));
              chatAdapter.notifyDataSetChanged();
              Objects.requireNonNull(chatView.getLayoutManager()).scrollToPosition(messageList.size() - 1);
@@ -312,7 +377,6 @@ public class MainActivity extends AppCompatActivity implements BotReply {
 
          for (String item : arr) {
            if (botReply.contains(item)) {
-             Toast.makeText(this, "contains", Toast.LENGTH_SHORT).show();
              int target_num = botReply.indexOf(item);
              result = botReply.substring((item.length() + target_num), botReply.length() - 1);
 
@@ -323,6 +387,7 @@ public class MainActivity extends AppCompatActivity implements BotReply {
              mTTS.setPitch(1.0f);        // 기본  음성 톤.
              mTTS.setSpeechRate(1.0f);    // 기본  읽는 속도.
              speak(result);
+             break;
            }
          }
 
@@ -346,13 +411,9 @@ public class MainActivity extends AppCompatActivity implements BotReply {
     }
     super.onDestroy();
 
-    setAlarm();
-  }
-
-  @Override
-  protected void onStop() {
-    super.onStop();
-    setAlarm();
+    if (alarm == 0) {
+      setAlarm();
+    }
   }
 
 
@@ -405,15 +466,106 @@ public class MainActivity extends AppCompatActivity implements BotReply {
               .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
       String str = results.get(0);
-      Toast.makeText(getBaseContext(), str, Toast.LENGTH_SHORT).show();
 
       messageList.add(new Message(str, false));
       sendMessageToBot(str);
+      content.add(str);
       Objects.requireNonNull(chatView.getAdapter()).notifyDataSetChanged();
       Objects.requireNonNull(chatView.getLayoutManager())
               .scrollToPosition(messageList.size() - 1);
       //TextView tv = findViewById(R.id.editMessage);
       //tv.setText(str);
     }
+  }
+
+
+  protected void sendToDB(List<String> cont,String negative){
+//        user = ((LoginActivity)LoginActivity.context_login).user;
+//        System.out.println("after: " + after);
+
+    System.out.println(cont);
+
+    System.out.println("after: "+after);
+    DataManager dataManager = DataManager.getInstance();
+    user = dataManager.getUser();
+    Long personal_num = user.getPersonal_num();
+    String name= user.getName();
+
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl("http://ec2-user@ec2-3-35-45-32.ap-northeast-2.compute.amazonaws.com:8080/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
+
+    RetrofitInterface retrofitInterface=retrofit.create(RetrofitInterface.class);
+    // System.out.println(1);
+    System.out.println(name + " " + personal_num);
+    Consultant consultant_content = new Consultant(name,personal_num,cont,negative);
+
+
+    Call<Consultant> createcontent = retrofitInterface.createContent(consultant_content);
+    createcontent.enqueue(new Callback<Consultant>() {
+      @Override
+      public void onResponse(Call<Consultant> call, Response<Consultant> response) {
+        if (response.isSuccessful()) {
+          //  dataManager.setConsultant(consultant_content);
+          Log.d(TAG, "onResponse1: Something Happen");
+          number=response.body().getC_consultant_num();
+
+          User updateuser=new User(user.getPersonal_num(),user.getId(),user.getPw(),user.getName(),number);
+
+          update(updateuser);
+
+
+        } else {
+          Log.d(TAG, "onResponse1: Something Wrong");
+        }
+      }
+      @Override
+      public void onFailure(Call<Consultant> call, Throwable t) {
+        Log.d(TAG, "onResponse2: Something Wrong");
+      }
+
+
+    });
+
+
+
+
+  }
+
+  @Override
+  protected void onStop() {
+    super.onStop();
+    if (alarm == 0) {
+      setAlarm();
+      //content = content.replace("\n", "@");
+      if(no != 1) {
+        content.remove("null");
+        sendToDB(content, neg_val);
+      }
+    }
+  }
+  public void update(User user2){
+    Retrofit retrofit = new Retrofit.Builder()
+            .baseUrl("http://ec2-user@ec2-3-35-45-32.ap-northeast-2.compute.amazonaws.com:8080/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
+
+
+
+    RetrofitInterface retrofitInterface=retrofit.create(RetrofitInterface.class);
+    Call<User> user1 = retrofitInterface.updateuser(user.getPersonal_num(),user2);
+    user1.enqueue(new Callback<User>() {
+      @Override
+      public void onResponse(Call<User> call, Response<User> response) {
+        Log.d(TAG, "onResponse1: Something Happen");
+      }
+
+      @Override
+      public void onFailure(Call<User> call, Throwable t) {
+        Log.d(TAG, "onResponse2: Something Wrong");
+
+      }
+    });
   }
 }

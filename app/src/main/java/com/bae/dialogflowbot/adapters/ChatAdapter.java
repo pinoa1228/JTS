@@ -7,17 +7,17 @@ import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bae.dialogflowbot.MainActivity3;
 import com.bae.dialogflowbot.R;
 import com.bae.dialogflowbot.models.Message;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> {
@@ -25,6 +25,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
   private List<Message> messageList;
   private Activity activity;
   private final Context mContext;
+
+  List<String> piclist = new ArrayList<>(Arrays.asList("sea", "river", "tree", "rain", "forest"));
+  String pic;
+
+
 
   public ChatAdapter(List<Message> messageList, Activity activity ) {
     this.messageList = messageList;
@@ -43,14 +48,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
   private class ImageGetter implements Html.ImageGetter {
     public Drawable getDrawable(String source) {
       source = source.replaceAll(".png", "");  //이때 .png .jpg 등이 붙어 있으면 drawable에서 이미지를 못불러 온다.
-      int id = mContext.getResources().getIdentifier("@drawable/sea", "drawable", mContext.getPackageName());
+
+      int id = mContext.getResources().getIdentifier(source, "drawable", mContext.getPackageName());
       Drawable d = mContext.getResources().getDrawable(id);
       int w = d.getIntrinsicWidth();
       int h = d.getIntrinsicHeight();
-      d.setBounds(0,0, w, h); //이미지 크기 설정
+      d.setBounds(30,5, w, h); //이미지 크기 설정
       return d;
     }
   };
+
 
   @Override public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
     String message = messageList.get(position).getMessage();
@@ -58,14 +65,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
      if(isReceived){
        holder.messageReceive.setVisibility(View.VISIBLE);
        holder.messageSend.setVisibility(View.GONE);
-       if (message.equals("사진 출력")) {
-
-         System.out.println(message);
-         System.out.println(message.equals("사진 출력"));
-
-         String htmltext = "이건 어떠세요? </br>" +
-                 "<p style = \"text-align: center;\">" +  "<img src='icon.png'/> </p>";
-         holder.messageReceive.setText(Html.fromHtml(htmltext, new ImageGetter(), null));
+       if(message.contains("<img src='")) {
+         holder.messageReceive.setText(Html.fromHtml(message, new ImageGetter(), null));
        }
        else{
          holder.messageReceive.setText(message);
@@ -90,6 +91,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
       super(itemView);
       messageSend = itemView.findViewById(R.id.message_send);
       messageReceive = itemView.findViewById(R.id.message_receive);
+
     }
   }
 

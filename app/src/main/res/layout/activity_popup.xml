@@ -18,6 +18,7 @@
             android:background="@color/colorPrimaryDark"
             android:gravity="center"
             android:text="Notice"
+            android:fontFamily="@font/register"
             android:textColor="#fff"
             android:textSize="20sp" />
     </LinearLayout>
@@ -37,6 +38,7 @@
             android:layout_marginBottom="3dp"
             android:alpha="0.87"
             android:gravity="center"
+            android:fontFamily="@font/register"
             android:text="음성 기능을 사용하시겠어요?"
             android:textAlignment="center"
             android:textColor="#000"
@@ -64,6 +66,7 @@
             android:onClick="mOnVoice"
             android:padding="16dp"
             android:text="음성으로 대화하기"
+            android:fontFamily="@font/register"
             android:textColor="@color/white"
             android:textSize="15sp" />
 
@@ -76,6 +79,7 @@
             android:onClick="mOnChat"
             android:padding="16dp"
             android:text="채팅으로 대화하기"
+            android:fontFamily="@font/register"
             android:textColor="@color/white"
             android:textSize="15sp" />
     </LinearLayout>
